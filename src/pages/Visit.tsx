@@ -112,7 +112,7 @@ export default function Visit() {
         </div>
         <div>
           <b style={{ color: 'var(--shu)' }}>{conquered}</b>
-          <span>제패한 구</span>
+          <span>완성한 구</span>
         </div>
       </div>
 

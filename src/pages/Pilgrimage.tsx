@@ -323,7 +323,7 @@ export default function Pilgrimage() {
 
   return (
     <main className="page">
-      <h1 className="page-title">오늘의 순례</h1>
+      <h1 className="page-title">오늘의 순례 루트</h1>
       <p className="page-sub">인장을 받은 순서대로 하루를 다시 걸어 봐요.</p>
 
       <div className="chips" style={{ marginBottom: 12 }}>

@@ -111,7 +111,7 @@ export default function Conquest() {
   });
   const visitedDistricts = new Set(region.places.filter((p) => visited.has(p.id)).map((p) => p.district));
 
-  // 다음 제패에 가장 가까운 구
+  // 완성에 가장 가까운 구
   const nextTarget = [...byDistrict.keys()]
     .map((n) => ({ n, ...stat(n) }))
     .filter((s) => s.got > 0 && s.got < s.total)
@@ -119,7 +119,7 @@ export default function Conquest() {
 
   const trophies = [
     { icon: '初', label: '첫 인장', ok: collected.length > 0 },
-    { icon: '制', label: '첫 제패', ok: conquered.length > 0 },
+    { icon: '完', label: '첫 구 완성', ok: conquered.length > 0 },
     { icon: '夜', label: '야경 인장', ok: collected.some((c) => c.stampId === 'namsan-night') },
     { icon: '宮', label: '궁궐 순례', ok: region.places.filter((p) => p.themes.includes('궁궐')).every((p) => visited.has(p.id)) },
     { icon: '十', label: '인장 10개', ok: collected.length >= 10 },
@@ -130,25 +130,27 @@ export default function Conquest() {
 
   return (
     <main className="page">
-      <h1 className="page-title">서울 제패 지도</h1>
-      <p className="page-sub">구 안의 인장 장소를 모두 모으면 그 구를 제패해요.</p>
+      <h1 className="page-title">서울 도장깨기 지도</h1>
+      <p className="page-sub">인장을 받은 구가 하나씩 칠해져요. 구 안의 인장 장소를 모두 모으면 ★완성.</p>
 
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div>
             <div className="muted" style={{ fontSize: 13 }}>
-              제패한 구
+              서울 도장깨기
             </div>
             <div className="big-num">
-              <span style={{ color: 'var(--shu)' }}>{conquered.length}</span>
-              <span style={{ fontSize: 16, color: 'var(--faint)' }}> / {withStamps}</span>
+              <span style={{ color: 'var(--shu)' }}>{visitedDistricts.size}</span>
+              <span style={{ fontSize: 16, color: 'var(--faint)' }}> / 25</span>
             </div>
           </div>
           <div style={{ textAlign: 'right' }}>
             <div className="muted" style={{ fontSize: 13 }}>
-              방문한 구
+              ★완성한 구
             </div>
-            <div style={{ fontWeight: 800, fontSize: 18 }}>{visitedDistricts.size} / 25</div>
+            <div style={{ fontWeight: 800, fontSize: 18 }}>
+              {conquered.length} / {withStamps}
+            </div>
           </div>
         </div>
         <svg className="conquest-svg" viewBox={`0 0 ${W} ${H}`} style={{ marginTop: 10 }}>
@@ -179,7 +181,7 @@ export default function Conquest() {
         </svg>
         <div className="legend">
           <span>
-            <i style={{ background: '#9f2a22' }} /> 제패
+            <i style={{ background: '#9f2a22' }} /> ★완성
           </span>
           <span>
             <i style={{ background: 'rgb(220,110,100)' }} /> 진행 중
@@ -193,7 +195,7 @@ export default function Conquest() {
         </div>
         {nextTarget && (
           <div className="tag shu" style={{ marginTop: 12, padding: '8px 10px', fontSize: 13 }}>
-            {nextTarget.n} 제패까지 {nextTarget.total - nextTarget.got}곳 남았어요
+            {nextTarget.n} 완성까지 {nextTarget.total - nextTarget.got}곳 남았어요
           </div>
         )}
       </div>
@@ -245,7 +247,7 @@ export default function Conquest() {
           ) : (
             <>
               <p className="muted" style={{ marginTop: 0 }}>
-                {selStat.got === selStat.total ? '제패했어요!' : `제패까지 ${selStat.total - selStat.got}곳 남았어요`}
+                {selStat.got === selStat.total ? '★ 완성했어요!' : `완성까지 ${selStat.total - selStat.got}곳 남았어요`}
               </p>
               {selStat.places.map((p) => (
                 <div className="list-row" key={p.id}>
