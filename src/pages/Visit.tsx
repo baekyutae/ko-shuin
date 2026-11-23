@@ -1,12 +1,15 @@
 import { lazy, Suspense, useCallback, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { toast, useNow } from '../components/ui';
 import { usePosition } from '../hooks/usePosition';
 import { getPlace, placeById, region } from '../regions';
-import { distanceM, formatDistance, walkMinutes } from '../lib/geo';
+import { CROWD_LEVELS } from '../lib/crowd';
+import { distanceM, formatDistance, walkMinutes, type LngLat } from '../lib/geo';
+import { DAYPART_LABEL, WEATHER_LABEL } from '../lib/labels';
+import { planNow } from '../lib/plan';
 import { placeKey } from '../lib/qr';
 import { describeCondition, isOpen } from '../lib/rules';
-import { hm } from '../lib/time';
+import { hm, isNight } from '../lib/time';
 import { useStore } from '../store';
 
 const QrScanner = lazy(() => import('../components/QrScanner').then((m) => ({ default: m.QrScanner })));
@@ -18,6 +21,7 @@ export default function Visit() {
   const collected = useStore((s) => s.collected);
   const custom = useStore((s) => s.customStamps);
   const flags = useStore((s) => s.debug.manualFlags);
+  const weather = useStore((s) => s.debug.weather);
   const award = useStore((s) => s.award);
   const [scanning, setScanning] = useState(false);
 
@@ -26,7 +30,7 @@ export default function Visit() {
     () => new Set([...visitedPlaces].map((id) => placeById.get(id)?.district).filter(Boolean)),
     [visitedPlaces],
   );
-  const conquered = useMemo(() => {
+  const completed = useMemo(() => {
     const byDistrict = new Map<string, string[]>();
     region.places.forEach((p) => byDistrict.set(p.district, [...(byDistrict.get(p.district) ?? []), p.id]));
     return [...byDistrict.values()].filter((ids) => ids.every((id) => visitedPlaces.has(id))).length;
@@ -39,8 +43,17 @@ export default function Visit() {
       .sort((a, b) => a.dist! - b.dist!);
   }, [pos.coords]);
 
+  const origin: LngLat = pos.coords ?? region.center;
+  const hourKey = `${current.toDateString()}-${current.getHours()}`;
+  const plan = useMemo(
+    () => planNow(origin, current, collected, custom, flags),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [origin[0], origin[1], hourKey, collected, custom, flags],
+  );
+
   const here = nearby.find((n) => n.dist != null && n.dist <= n.place.radiusM);
   const openLimited = [...region.limitedStamps, ...custom].filter((s) => s.limited && isOpen(s.condition, current, flags));
+  const daypart = isNight(current) ? 'night' : 'day';
 
   const receive = (placeId: string, via: 'gps' | 'qr') => {
     const { uids, duplicate } = award(placeId, via);
@@ -68,7 +81,9 @@ export default function Visit() {
             <span className="dot" />
             {pos.source === 'demo' ? '시연 위치' : pos.coords ? 'GPS 연결됨' : '위치 확인 중'}
           </span>
-          <span>{hm(current)}</span>
+          <span>
+            {hm(current)} · {WEATHER_LABEL[weather]} · {DAYPART_LABEL[daypart]}
+          </span>
         </div>
         {here ? (
           <>
@@ -91,9 +106,14 @@ export default function Visit() {
                   ? `${nearby[0].place.nameKo}까지 걸어서 약 ${walkMinutes(pos.coords!, [nearby[0].place.lng, nearby[0].place.lat])}분`
                   : '장소에 도착하면 인장을 받을 수 있어요.'}
             </p>
-            <button className="btn" onClick={() => setScanning(true)}>
-              현장 QR 찍기
-            </button>
+            <div className="row">
+              <Link className="btn" to="/now">
+                지금 받을 수 있는 인장
+              </Link>
+              <button className="btn secondary" style={{ flex: '0 0 84px' }} onClick={() => setScanning(true)}>
+                QR
+              </button>
+            </div>
           </>
         )}
       </section>
@@ -108,21 +128,21 @@ export default function Visit() {
             {visitedDistricts.size}
             <small style={{ fontSize: 13, color: 'var(--faint)' }}>/25</small>
           </b>
-          <span>방문한 구</span>
+          <span>서울 도장깨기</span>
         </div>
         <div>
-          <b style={{ color: 'var(--shu)' }}>{conquered}</b>
-          <span>완성한 구</span>
+          <b style={{ color: 'var(--shu)' }}>{completed}</b>
+          <span>★완성한 구</span>
         </div>
       </div>
 
       {openLimited.length > 0 && (
         <>
-          <div className="section-label">지금만 받을 수 있는 인장</div>
+          <div className="section-label">지금 열린 시즌·이벤트 인장</div>
           <div className="stack">
             {openLimited.map((s) => (
               <div className="limited-banner" key={s.id} style={{ background: `linear-gradient(120deg, ${s.color}, ${s.color}cc)` }}>
-                <span style={{ fontFamily: 'var(--serif)', fontSize: 22, opacity: 1 }}>限</span>
+                <span style={{ fontFamily: 'var(--serif)', fontSize: 22 }}>限</span>
                 <div>
                   <b>{s.title}</b>
                   <span>
@@ -136,10 +156,37 @@ export default function Visit() {
       )}
 
       <div className="section-label">
+        지금 받을 수 있는 인장 <small>덜 붐비는 곳부터</small>
+      </div>
+      <Link to="/now" className="card" style={{ display: 'block', textDecoration: 'none' }}>
+        {plan.route.map((s, i) => {
+          const lv = CROWD_LEVELS[s.level];
+          return (
+            <div className="list-row" key={s.place.id}>
+              <div className="rank" style={{ background: lv.color }}>
+                {i + 1}
+              </div>
+              <div style={{ flex: 1 }}>
+                <b>{s.place.nameKo}</b>
+                <span className="muted" style={{ fontSize: 12.5 }}>
+                  {' '}
+                  · {s.mode === 'walk' ? '도보' : '지하철·버스'} {s.walk}분{s.limited.length ? ' · 한정 열림' : ''}
+                </span>
+              </div>
+              <span className="pill" style={{ background: lv.color }}>
+                {lv.label}
+              </span>
+            </div>
+          );
+        })}
+        <div style={{ marginTop: 10, fontWeight: 700, fontSize: 14, color: 'var(--shu)' }}>루트 지도로 보기 →</div>
+      </Link>
+
+      <div className="section-label">
         {pos.coords ? '가까운 인장 장소' : '인장 장소'} <small>{region.places.length}곳</small>
       </div>
       <div className="card">
-        {nearby.slice(0, 10).map(({ place, dist }) => {
+        {nearby.slice(0, 8).map(({ place, dist }) => {
           const done = visitedPlaces.has(place.id);
           const inRange = dist != null && dist <= place.radiusM;
           return (

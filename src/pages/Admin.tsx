@@ -12,6 +12,13 @@ import { useStore } from '../store';
 
 const COLORS = ['#c8372d', '#2f4b7c', '#b8641c', '#6b4fa0', '#2f7d5b', '#c2527a'];
 
+const PRESETS = [
+  { name: '본선 행사 기념', placeId: 'korec', label: '본선 기념', title: 'DigiMan 해커톤 본선 기념 인장', color: '#c8372d', official: true, from: '2026-11-29', to: '2026-11-29' },
+  { name: '크리스마스 명소', placeId: 'thehyundai', label: '성 탄', title: '더현대 서울 크리스마스 인장', color: '#2f7d5b', official: true, from: '2026-12-01', to: '2026-12-25' },
+  { name: '벚꽃 시즌', placeId: 'yeouido', label: '벚 꽃', title: '여의도 벚꽃 인장', color: '#c2527a', official: false, from: '2027-04-01', to: '2027-04-14' },
+  { name: '축제 기간', placeId: 'yeouido', label: '불꽃 축제', title: '여의도 불꽃축제 인장', color: '#6b4fa0', official: true, from: '2027-10-02', to: '2027-10-02' },
+];
+
 /** 기관·사업주용 관리자 화면: 공식·한정 인장 등록과 현장 QR 출력 */
 export default function Admin() {
   const custom = useStore((s) => s.customStamps);
@@ -25,7 +32,8 @@ export default function Admin() {
   const [title, setTitle] = useState('');
   const [color, setColor] = useState(COLORS[0]);
   const [official, setOfficial] = useState(true);
-  const [date, setDate] = useState(ymd(current));
+  const [from, setFrom] = useState('2026-11-29');
+  const [to, setTo] = useState('2026-11-29');
   const [useHours, setUseHours] = useState(false);
   const [fromH, setFromH] = useState(18);
   const [toH, setToH] = useState(24);
@@ -49,14 +57,14 @@ export default function Admin() {
       limited: true,
       title: title || `${place.nameKo} ${label || '한정'} 인장`,
       condition: {
-        dates: date ? [date] : undefined,
+        period: from ? { from, to: to && to >= from ? to : from } : undefined,
         hours: useHours ? [fromH, toH] : undefined,
         limit: limit ? Number(limit) : undefined,
       },
-      hint: date ? `${date.replaceAll('-', '.')} 한정` : '기간 한정',
+      hint: from ? `${from.replaceAll('-', '.')}${to && to !== from ? `~${to.slice(5).replace('-', '.')}` : ''} 한정` : '기간 한정',
       baseIssued: 0,
     }),
-    [placeId, label, color, official, title, place.nameKo, date, useHours, fromH, toH, limit],
+    [placeId, label, color, official, title, place.nameKo, from, to, useHours, fromH, toH, limit],
   );
 
   const todayAtPlace = collected.filter((c) => c.placeId === placeId && ymd(new Date(c.at)) === ymd(current)).length;
@@ -91,7 +99,31 @@ export default function Admin() {
 
       <div className="admin-grid">
         <section className="card">
-          <h3 style={{ marginTop: 0 }}>한정·공식 인장 등록</h3>
+          <h3 style={{ marginTop: 0 }}>시즌·행사 한정 인장 등록</h3>
+          <p className="muted" style={{ fontSize: 13, marginTop: -6 }}>
+            한정은 실제로 그 시기에만 의미가 있는 장소에만 써요(벚꽃·단풍 시즌, 크리스마스 명소, 축제·행사 기간).
+          </p>
+          <div className="chips" style={{ marginBottom: 16 }}>
+            {PRESETS.map((pr) => (
+              <button
+                key={pr.name}
+                className="chip"
+                onClick={() => {
+                  setPlaceId(pr.placeId);
+                  setLabel(pr.label);
+                  setTitle(pr.title);
+                  setColor(pr.color);
+                  setOfficial(pr.official);
+                  setFrom(pr.from);
+                  setTo(pr.to);
+                  setUseHours(false);
+                  setLimit('');
+                }}
+              >
+                {pr.name}
+              </button>
+            ))}
+          </div>
           <label className="field">
             <span>장소</span>
             <select className="input" value={placeId} onChange={(e) => setPlaceId(e.target.value)}>
@@ -128,9 +160,15 @@ export default function Admin() {
           </div>
           <div className="row">
             <label className="field">
-              <span>날짜 (비우면 매일)</span>
-              <input className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+              <span>시즌·행사 시작일</span>
+              <input className="input" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
             </label>
+            <label className="field">
+              <span>종료일</span>
+              <input className="input" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+            </label>
+          </div>
+          <div className="row">
             <label className="field">
               <span>선착순 수량 (선택)</span>
               <input className="input" type="number" min={1} value={limit} onChange={(e) => setLimit(e.target.value)} placeholder="제한 없음" />
@@ -184,7 +222,7 @@ export default function Admin() {
           <div className="card">
             <h3 style={{ marginTop: 0 }}>미리보기</h3>
             <div className="preview-pane">
-              <Stamp def={draft} place={place} date={date ? new Date(`${date}T12:00`) : current} serial={1} size={200} />
+              <Stamp def={draft} place={place} date={from ? new Date(`${from}T12:00`) : current} serial={1} size={200} />
             </div>
           </div>
           <div className="card qr-box">

@@ -4,20 +4,26 @@ import { toPng } from 'html-to-image';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { Stamp } from '../components/Stamp';
+import { TimelineCard } from '../components/TimelineCard';
 import { Sheet, toast, useNow } from '../components/ui';
 import { baseStampOf, getPlace, region } from '../regions';
 import { arcBetween, bearing, distanceM, formatDistance, type LngLat } from '../lib/geo';
-import { dotDate, hmFromMinutes, minutesOf, ymd } from '../lib/time';
-import { openStampsAt, stampDefById, useStore } from '../store';
+import { MAP_STYLE } from '../lib/map';
+import { dotDate, hmFromMinutes, isNight, minutesOf, ymd } from '../lib/time';
+import type { Daypart, Weather } from '../regions/types';
+import { openStampsAt, stampDefById, useStore, type TrackPoint } from '../store';
 
 interface Stop {
   placeId: string;
+  /** 받은 시각(ms) */
+  at: number;
   minutes: number;
   stampIds: string[];
   serial?: number;
+  weather: Weather;
+  daypart: Daypart;
 }
 
-const MAP_STYLE = 'https://tiles.openfreemap.org/styles/positron';
 const PAUSE_MS = 750;
 const TRAVEL_MS = 13000;
 
@@ -32,8 +38,13 @@ function legCoords(a: string, b: string): LngLat[] {
   return arcBetween([pa.lng, pa.lat], [pb.lng, pb.lat]);
 }
 
-function buildPath(stops: Stop[]) {
+/**
+ * 인장 지점을 시간순으로 잇는 경로.
+ * ⑧ GPS 타임라인이 켜져 있어 두 인장 사이의 실제 위치 기록이 있으면 그 이동선을 쓴다.
+ */
+function buildPath(stops: Stop[], track: TrackPoint[] = []) {
   const coords: LngLat[] = [];
+  let gpsLegs = 0;
   const stopDist: number[] = [];
   const cum: number[] = [];
   let total = 0;
@@ -45,10 +56,17 @@ function buildPath(stops: Stop[]) {
   stops.forEach((s, i) => {
     const p = getPlace(s.placeId);
     if (i === 0) push([p.lng, p.lat]);
-    else legCoords(stops[i - 1].placeId, s.placeId).forEach(push);
+    else {
+      const between = track.filter((t) => t.t > stops[i - 1].at && t.t < s.at);
+      if (between.length >= 2) {
+        gpsLegs++;
+        between.forEach((t) => push([t.lng, t.lat]));
+        push([p.lng, p.lat]);
+      } else legCoords(stops[i - 1].placeId, s.placeId).forEach(push);
+    }
     stopDist.push(total);
   });
-  return { coords, cum, stopDist, total };
+  return { coords, cum, stopDist, total, gpsLegs };
 }
 
 /** 이동 거리 d까지 잘라 낸 경로와 머리 위치 */
@@ -72,11 +90,17 @@ function useStops(mode: 'today' | 'demo'): { stops: Stop[]; date: string } {
       const date = region.demoDay.date;
       return {
         date,
-        stops: region.demoDay.stops.map((s) => ({
-          placeId: s.placeId,
-          minutes: minutesOf(s.time),
-          stampIds: openStampsAt(s.placeId, new Date(`${date}T${s.time}`), [], [], []).map((d) => d.id),
-        })),
+        stops: region.demoDay.stops.map((s) => {
+          const at = new Date(`${date}T${s.time}`);
+          return {
+            placeId: s.placeId,
+            at: at.getTime(),
+            minutes: minutesOf(s.time),
+            stampIds: openStampsAt(s.placeId, at, [], [], []).map((d) => d.id),
+            weather: 'sunny' as Weather,
+            daypart: (isNight(at) ? 'night' : 'day') as Daypart,
+          };
+        }),
       };
     }
     const mine = collected.filter((c) => ymd(new Date(c.at)) === today).sort((a, b) => a.at.localeCompare(b.at));
@@ -85,7 +109,16 @@ function useStops(mode: 'today' | 'demo'): { stops: Stop[]; date: string } {
       const last = stops[stops.length - 1];
       const at = new Date(c.at);
       if (last && last.placeId === c.placeId) last.stampIds.push(c.stampId);
-      else stops.push({ placeId: c.placeId, minutes: at.getHours() * 60 + at.getMinutes(), stampIds: [c.stampId], serial: c.serial });
+      else
+        stops.push({
+          placeId: c.placeId,
+          at: at.getTime(),
+          minutes: at.getHours() * 60 + at.getMinutes(),
+          stampIds: [c.stampId],
+          serial: c.serial,
+          weather: c.weather,
+          daypart: c.daypart,
+        });
     });
     return { date: today, stops };
   }, [mode, collected, today]);
@@ -110,7 +143,8 @@ export default function Pilgrimage() {
   const [shot, setShot] = useState<string | null>(null);
   const [cardOpen, setCardOpen] = useState(false);
 
-  const path = useMemo(() => (playable ? buildPath(stops) : null), [stops, playable]);
+  const track = useStore((s) => s.timeline.points);
+  const path = useMemo(() => (playable ? buildPath(stops, mode === 'today' ? track : []) : null), [stops, playable, mode, track]);
 
   // 지도 생성
   useEffect(() => {
@@ -125,6 +159,8 @@ export default function Pilgrimage() {
     });
     mapRef.current = map;
     map.on('load', () => {
+      // 축약형 출처 표기를 처음부터 접어 둔다(ⓘ를 누르면 펼쳐짐).
+      map.getContainer().querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show');
       map.addSource('ghost', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
       map.addSource('route', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
       map.addSource('head', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
@@ -191,7 +227,9 @@ export default function Pilgrimage() {
     el.className = 'stamp-marker';
     const root = createRoot(el);
     const def = stampDefById(stop.stampIds[stop.stampIds.length - 1]) ?? baseStampOf(place);
-    root.render(<Stamp def={def} place={place} size={54} rotate={-6} date={new Date(`${date}T${hmFromMinutes(stop.minutes)}`)} />);
+    root.render(
+      <Stamp def={def} place={place} size={54} rotate={-6} date={new Date(stop.at)} weather={stop.weather} daypart={stop.daypart} />,
+    );
     const marker = new maplibregl.Marker({ element: el }).setLngLat([place.lng, place.lat]).addTo(map);
     markers.current.push({ marker, root });
   };
@@ -407,11 +445,16 @@ export default function Pilgrimage() {
               })}
             </ul>
             <div className="demo-note">
-              도보 경로: © OpenStreetMap contributors (OSRM). 실서비스는 인장을 받을 때마다 직전 장소와의 도보 경로를 조회합니다. 연속 위치 추적은 하지 않습니다.
+              {path && path.gpsLegs > 0
+                ? `GPS 타임라인으로 기록한 실제 이동선 ${path.gpsLegs}구간을 표시했어요. `
+                : ''}
+              도보 경로: © OpenStreetMap contributors (OSRM). 기본은 인장 지점만 이어 그리고, GPS 타임라인을 켠 사용자만 실제 이동선을 기록합니다.
             </div>
           </div>
         </>
       )}
+
+      <TimelineCard />
 
       {cardOpen && path && (
         <ShareCard
@@ -494,7 +537,18 @@ function ShareCard(props: {
             {props.stops.map((s, i) => {
               const place = getPlace(s.placeId);
               const def = stampDefById(s.stampIds[s.stampIds.length - 1]) ?? baseStampOf(place);
-              return <Stamp key={i} def={def} place={place} size={58} rotate={((i * 7) % 11) - 5} date={new Date(`${props.date}T00:00`)} />;
+              return (
+                <Stamp
+                  key={i}
+                  def={def}
+                  place={place}
+                  size={58}
+                  rotate={((i * 7) % 11) - 5}
+                  date={new Date(s.at)}
+                  weather={s.weather}
+                  daypart={s.daypart}
+                />
+              );
             })}
           </div>
           <div className="sc-foot">

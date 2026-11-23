@@ -2,11 +2,12 @@ import { useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Stamp } from '../components/Stamp';
 import { useNow } from '../components/ui';
-import { getPlace, region } from '../regions';
+import { getPlace, placeById, region } from '../regions';
 import { CROWD_LEVELS, crowdLevel, forecast, quietestHour } from '../lib/crowd';
 import { pressFeedback } from '../lib/feedback';
 import { walkMinutes } from '../lib/geo';
-import { hm, ymd } from '../lib/time';
+import { DAYPART_LABEL, WEATHER_LABEL } from '../lib/labels';
+import { hm, reiwaDate, ymd } from '../lib/time';
 import { stampDefById, useStore } from '../store';
 
 export default function Result() {
@@ -62,6 +63,10 @@ export default function Result() {
 
   const place = getPlace(main.placeId);
   const def = stampDefById(main.stampId)!;
+  // 이번 인장으로 이 구에 처음 들어왔는지(도장깨기 지도가 칠해짐)
+  const before = collected.filter((c) => c.at < main.at);
+  const firstInDistrict = !before.some((c) => placeById.get(c.placeId)?.district === place.district);
+  const districtCount = new Set(collected.filter((c) => c.at <= main.at).map((c) => placeById.get(c.placeId)?.district)).size;
   const at = new Date(main.at);
   const dayKey = ymd(current);
   const fc = forecast(place, dayKey);
@@ -76,12 +81,20 @@ export default function Result() {
           {place.nameJa} · {place.district}
         </div>
         <div className="press">
-          <Stamp def={def} place={place} date={at} serial={main.serial} size={190} />
+          <Stamp def={def} place={place} date={at} serial={main.serial} size={190} weather={main.weather} daypart={main.daypart} />
         </div>
         <div className="press-got">{duplicate ? '오늘 이미 받은 인장이에요' : '인장을 받았어요'}</div>
         <div className="press-meta">
           {hm(at)} 방문 · <b>{main.serial.toLocaleString()}번째</b> 방문자 · {main.via === 'qr' ? 'QR 인증' : 'GPS 인증'}
         </div>
+        <div className="press-meta">
+          {reiwaDate(at)} · 그날의 인장: {WEATHER_LABEL[main.weather]} · {DAYPART_LABEL[main.daypart]}
+        </div>
+        {firstInDistrict && !duplicate && (
+          <div className="tag shu" style={{ marginTop: 12, padding: '7px 12px', fontSize: 13 }}>
+            {place.district}가 칠해졌어요 · 서울 도장깨기 {districtCount}/25
+          </div>
+        )}
         {items.length > 1 && (
           <>
             <div className="press-meta" style={{ marginTop: 14 }}>
@@ -90,7 +103,7 @@ export default function Result() {
             <div className="extra-stamps">
               {items.slice(1).map((c, i) => (
                 <div className="press delay" key={c.uid} style={{ animationDelay: `${0.9 + i * 0.35}s`, margin: '8px 0 0' }}>
-                  <Stamp def={stampDefById(c.stampId)!} place={place} date={new Date(c.at)} serial={c.serial} size={120} rotate={6} />
+                  <Stamp def={stampDefById(c.stampId)!} place={place} date={new Date(c.at)} serial={c.serial} size={120} rotate={6} weather={c.weather} daypart={c.daypart} />
                 </div>
               ))}
             </div>
@@ -123,7 +136,12 @@ export default function Result() {
             </div>
           );
         })}
-        <div className="demo-note">비율·혼잡도는 예시 데이터입니다. 실서비스는 방문 순서 집계(5명 미만 비공개)와 서울시 실시간 도시데이터를 씁니다.</div>
+        <div className="demo-note">
+          비율은 운영팀 시드 데이터(대표 관광 동선)이고 혼잡도는 예시입니다. 실제 방문 순서가 쌓이면 실데이터로 바꿉니다(5명 미만 비공개).
+        </div>
+        <Link className="btn secondary" to="/now" style={{ marginTop: 12 }}>
+          지금 받을 수 있는 인장 · 덜 붐비는 루트
+        </Link>
       </div>
 
       <div className="section-label">
@@ -145,7 +163,7 @@ export default function Result() {
           수첩 보기
         </Link>
         <Link className="btn dark" to="/route">
-          오늘의 순례
+          오늘의 순례 루트
         </Link>
       </div>
     </main>

@@ -120,9 +120,9 @@ export default function Conquest() {
   const trophies = [
     { icon: '初', label: '첫 인장', ok: collected.length > 0 },
     { icon: '完', label: '첫 구 완성', ok: conquered.length > 0 },
-    { icon: '夜', label: '야경 인장', ok: collected.some((c) => c.stampId === 'namsan-night') },
-    { icon: '宮', label: '궁궐 순례', ok: region.places.filter((p) => p.themes.includes('궁궐')).every((p) => visited.has(p.id)) },
-    { icon: '十', label: '인장 10개', ok: collected.length >= 10 },
+    { icon: '夜', label: '밤의 인장', ok: collected.some((c) => c.daypart === 'night') },
+    { icon: '雨', label: '비 오는 날 인장', ok: collected.some((c) => c.weather === 'rain') },
+    { icon: '限', label: '시즌·이벤트 인장', ok: collected.some((c) => region.limitedStamps.some((l) => l.id === c.stampId)) },
     { icon: '五', label: '5개 구 방문', ok: visitedDistricts.size >= 5 },
   ];
 

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { region } from '../regions';
+import type { Weather } from '../regions/types';
+import { WEATHER_LABEL } from '../lib/labels';
 import { hm, toLocalInput, dotDate } from '../lib/time';
 import { useStore } from '../store';
 import { Sheet, toast, useNow } from './ui';
@@ -45,14 +47,28 @@ export function DemoPanel() {
               본선 당일 10:30
             </button>
             <button className="chip" onClick={() => setTime(`${toLocalInput(current).slice(0, 10)}T18:30`)}>
-              오늘 18:30 (야경)
+              오늘 18:30 (밤)
             </button>
-            <button className="chip" onClick={() => setTime(`${toLocalInput(current).slice(0, 10)}T09:20`)}>
-              오늘 09:20 (아침)
+            <button className="chip" onClick={() => setTime('2026-12-24T19:00')}>
+              12/24 (크리스마스)
+            </button>
+            <button className="chip" onClick={() => setTime('2027-04-05T11:00')}>
+              4/5 (벚꽃)
             </button>
             <button className="chip" onClick={() => setDebug({ timeOffsetMs: 0 })}>
               실제 시각
             </button>
+          </div>
+
+          <div className="field">
+            <span>날씨 (인장 디자인에 반영 · 실서비스는 서울시 실시간 도시데이터)</span>
+            <div className="chips">
+              {(Object.keys(WEATHER_LABEL) as Weather[]).map((w) => (
+                <button key={w} className={`chip ${debug.weather === w ? 'on' : ''}`} onClick={() => setDebug({ weather: w })}>
+                  {WEATHER_LABEL[w]}
+                </button>
+              ))}
+            </div>
           </div>
 
           <label className="field">

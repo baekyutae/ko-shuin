@@ -8,6 +8,8 @@ import QrEntry from './pages/QrEntry';
 import Book from './pages/Book';
 import Conquest from './pages/Conquest';
 import Vote from './pages/Vote';
+import NowRoute from './pages/NowRoute';
+import { useTimelineRecorder } from './hooks/useTimelineRecorder';
 
 // 지도 라이브러리가 큰 화면은 필요할 때만 불러온다.
 const Pilgrimage = lazy(() => import('./pages/Pilgrimage'));
@@ -27,6 +29,7 @@ function Loading() {
 
 export default function App() {
   const { pathname } = useLocation();
+  useTimelineRecorder();
 
   if (pathname.startsWith('/admin')) {
     return (
@@ -49,6 +52,7 @@ export default function App() {
       <Suspense fallback={<Loading />}>
         <Routes>
           <Route path="/" element={<Visit />} />
+          <Route path="/now" element={<NowRoute />} />
           <Route path="/result" element={<Result />} />
           <Route path="/s/:placeId" element={<QrEntry />} />
           <Route path="/book" element={<Book />} />

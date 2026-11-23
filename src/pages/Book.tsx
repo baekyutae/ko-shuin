@@ -5,6 +5,7 @@ import { Sheet } from '../components/ui';
 import { getPlace, region } from '../regions';
 import type { StampDef } from '../regions/types';
 import { describeCondition } from '../lib/rules';
+import { DAYPART_LABEL, WEATHER_LABEL } from '../lib/labels';
 import { dotDate, hm } from '../lib/time';
 import { stampDefById, useStore, type Collected } from '../store';
 
@@ -69,7 +70,7 @@ export default function Book() {
             const place = getPlace(c.placeId);
             return (
               <button className="book-cell" key={c.uid} onClick={() => setOpen(c)}>
-                <Stamp def={def} place={place} date={new Date(c.at)} serial={c.serial} size={128} rotate={rot(c.uid)} />
+                <Stamp def={def} place={place} date={new Date(c.at)} serial={c.serial} size={128} rotate={rot(c.uid)} weather={c.weather} daypart={c.daypart} />
                 <small>{dotDate(new Date(c.at))}</small>
               </button>
             );
@@ -105,7 +106,7 @@ export default function Book() {
             return (
               <>
                 <div className="preview-pane">
-                  <Stamp def={def} place={place} date={at} serial={open.serial} size={220} />
+                  <Stamp def={def} place={place} date={at} serial={open.serial} size={220} weather={open.weather} daypart={open.daypart} />
                 </div>
                 <dl className="kv">
                   <dt>인장</dt>
@@ -117,6 +118,10 @@ export default function Book() {
                   <dt>장소</dt>
                   <dd>
                     {place.nameKo} · {place.nameJa} ({place.district})
+                  </dd>
+                  <dt>그날의 기록</dt>
+                  <dd>
+                    {WEATHER_LABEL[open.weather]} · {DAYPART_LABEL[open.daypart]}
                   </dd>
                   <dt>번호</dt>
                   <dd>{open.serial.toLocaleString()}번째</dd>

@@ -23,19 +23,22 @@ export interface Place {
 }
 
 export interface StampCondition {
-  /** [시작 시, 끝 시) 24시간제 */
+  /**
+   * 열리는 기간(시작·끝 포함). 'MM-DD'는 매년 반복, 'YYYY-MM-DD'는 그해만.
+   * 한정은 "실제로 그때만 의미가 있는 장소·시기"에만 쓴다(벚꽃·단풍·크리스마스·축제·행사).
+   */
+  period?: { from: string; to: string };
+  /** [시작 시, 끝 시) 24시간제. 행사 시간 등 관리자가 정할 때만 */
   hours?: [number, number];
-  /** YYYY-MM-DD 목록 */
-  dates?: string[];
-  /** 1~12 */
-  months?: number[];
-  /** 0(일)~6(토) */
-  weekdays?: number[];
   /** 운영자가 수동으로 여는 조건(예: 첫눈) */
   manual?: string;
   /** 선착순 수량 */
   limit?: number;
 }
+
+/** 그날의 기록: 인장 디자인에만 반영하고 한정 조건으로 쓰지 않는다. */
+export type Weather = 'sunny' | 'rain' | 'snow';
+export type Daypart = 'day' | 'night';
 
 export interface StampDef {
   id: string;
