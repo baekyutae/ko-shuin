@@ -19,7 +19,7 @@ const TABS = [
   { to: '/', icon: '訪', label: '방문' },
   { to: '/book', icon: '帖', label: '수첩' },
   { to: '/map', icon: '地', label: '도장깨기' },
-  { to: '/route', icon: '巡', label: '순례' },
+  { to: '/route', icon: '跡', label: '발자취' },
   { to: '/vote', icon: '票', label: '제안' },
 ];
 

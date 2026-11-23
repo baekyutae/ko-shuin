@@ -370,7 +370,7 @@ export default function Pilgrimage() {
 
   return (
     <main className="page">
-      <h1 className="page-title">오늘의 순례 루트</h1>
+      <h1 className="page-title">오늘의 발자취</h1>
       <p className="page-sub">인장을 받은 순서대로 하루를 다시 걸어 봐요.</p>
 
       <div className="chips" style={{ marginBottom: 12 }}>
@@ -407,7 +407,7 @@ export default function Pilgrimage() {
           {playable ? (
             <>
               <button className="btn" onClick={play} disabled={!ready || phase === 'playing'}>
-                {phase === 'idle' ? '▶ 순례 재생' : phase === 'playing' ? '재생 중…' : '↻ 다시 재생'}
+                {phase === 'idle' ? '▶ 발자취 재생' : phase === 'playing' ? '재생 중…' : '↻ 다시 재생'}
               </button>
               <button className="btn secondary" style={{ flex: '0 0 64px' }} onClick={() => setSpeed(speed === 1 ? 2 : 1)}>
                 {speed}x
@@ -501,7 +501,7 @@ function ShareCard(props: {
       const blob = await (await fetch(url)).blob();
       const file = new File([blob], `ko-shuin-${props.date}.png`, { type: 'image/png' });
       if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: 'KO朱印 오늘의 순례' });
+        await navigator.share({ files: [file], title: 'KO朱印 오늘의 발자취' });
       } else {
         const a = document.createElement('a');
         a.href = url;
@@ -518,10 +518,10 @@ function ShareCard(props: {
   return (
     <Sheet onClose={props.onClose}>
       <div ref={ref} className="share-card">
-        {props.shot ? <img className="map" src={props.shot} alt="오늘의 순례 경로" /> : <div style={{ height: 120, background: '#e8e4dc' }} />}
+        {props.shot ? <img className="map" src={props.shot} alt="오늘의 발자취 경로" /> : <div style={{ height: 120, background: '#e8e4dc' }} />}
         <div className="sc-body">
           <div className="sc-title">
-            <span>KO朱印</span> 오늘의 순례
+            <span>KO朱印</span> 오늘의 발자취
           </div>
           <div className="muted" style={{ fontSize: 12.5 }}>
             {dotDate(new Date(`${props.date}T00:00`))} · 서울 {[...districts].join('·')}
@@ -539,7 +539,7 @@ function ShareCard(props: {
               <b>
                 {Math.floor(props.elapsed / 60)}h {props.elapsed % 60}m
               </b>
-              <small>순례 시간</small>
+              <small>다닌 시간</small>
             </div>
           </div>
           <div className="sc-stamps">

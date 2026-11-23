@@ -845,7 +845,7 @@ a {
   filter: grayscale(1);
 }
 
-/* ---------- 순례 재생 ---------- */
+/* ---------- 오늘의 발자취 재생 ---------- */
 .route-wrap {
   position: relative;
   height: 62dvh;

@@ -20,6 +20,10 @@ export interface Place {
   fromVote?: boolean;
   /** 데모용 누적 방문자 수(인장 번호 계산에 사용) */
   baseVisitors: number;
+  /** false면 혼잡도 데이터가 없는 장소(서울시 도시데이터 범위 밖) → '정보 없음' */
+  crowdData?: boolean;
+  /** 데모용 혼잡도 보정값(예시 데이터의 장소별 성격) */
+  crowdBias?: number;
   note?: string;
 }
 
@@ -80,7 +84,7 @@ export interface RegionPack {
   places: Place[];
   limitedStamps: StampDef[];
   districts: DistrictCollection;
-  /** 예시 하루 (순례 재생용) */
+  /** 예시 하루 (오늘의 발자취 재생용) */
   demoDay: { date: string; stops: DemoStop[] };
   demoRoutes: RouteLeg[];
   /** 장소 픽토그램(76×44 선화). 없는 장소는 글자 중심 인장으로 만든다 */

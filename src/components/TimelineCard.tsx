@@ -25,7 +25,7 @@ export function TimelineCard() {
               ? demoLocation
                 ? '켜짐 · 시연 위치를 쓰는 동안에는 기록하지 않아요'
                 : `켜짐 · 오늘 ${todayPoints}개 지점 기록`
-              : '켜면 인장 사이의 실제 이동선까지 순례 루트에 그려요'}
+              : '켜면 인장 사이의 실제 이동선까지 오늘의 발자취에 그려요'}
           </div>
         </div>
         <button
@@ -54,7 +54,7 @@ export function TimelineCard() {
           <h3 style={{ margin: '0 0 8px' }}>위치 기록에 동의하시겠어요?</h3>
           <ul className="muted" style={{ fontSize: 14, lineHeight: 1.7, paddingLeft: 18, margin: '0 0 16px' }}>
             <li>앱이 열려 있는 동안 20m 이상 움직일 때마다 위치를 기록해요.</li>
-            <li>기록은 오늘의 순례 루트 카드에 실제 이동선을 그리는 데만 써요.</li>
+            <li>기록은 '오늘의 발자취' 카드에 실제 이동선을 그리는 데만 써요.</li>
             <li>데모에서는 이 기기에만 저장돼요. 언제든 끄고 기록을 지울 수 있어요.</li>
             <li>화면이 꺼지거나 앱을 닫으면 기록이 멈춰요(웹 제약).</li>
           </ul>

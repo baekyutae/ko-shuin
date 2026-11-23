@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { toast, useNow } from '../components/ui';
 import { usePosition } from '../hooks/usePosition';
 import { getPlace, placeById, region } from '../regions';
-import { CROWD_LEVELS } from '../lib/crowd';
 import { distanceM, formatDistance, walkMinutes, type LngLat } from '../lib/geo';
 import { DAYPART_LABEL, WEATHER_LABEL } from '../lib/labels';
 import { planNow } from '../lib/plan';
@@ -156,11 +155,11 @@ export default function Visit() {
       )}
 
       <div className="section-label">
-        지금 받을 수 있는 인장 <small>덜 붐비는 곳부터</small>
+        지금 받을 수 있는 인장 <small>균형 추천</small>
       </div>
       <Link to="/now" className="card" style={{ display: 'block', textDecoration: 'none' }}>
         {plan.route.map((s, i) => {
-          const lv = CROWD_LEVELS[s.level];
+          const lv = s.crowd;
           return (
             <div className="list-row" key={s.place.id}>
               <div className="rank" style={{ background: lv.color }}>
@@ -179,7 +178,7 @@ export default function Visit() {
             </div>
           );
         })}
-        <div style={{ marginTop: 10, fontWeight: 700, fontSize: 14, color: 'var(--shu)' }}>루트 지도로 보기 →</div>
+        <div style={{ marginTop: 10, fontWeight: 700, fontSize: 14, color: 'var(--shu)' }}>인장 투어 루트 보기 · 추천 기준 바꾸기 →</div>
       </Link>
 
       <div className="section-label">

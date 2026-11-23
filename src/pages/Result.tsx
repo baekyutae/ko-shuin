@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Stamp } from '../components/Stamp';
 import { useNow } from '../components/ui';
 import { getPlace, placeById, region } from '../regions';
-import { CROWD_LEVELS, crowdLevel, forecast, quietestHour } from '../lib/crowd';
+import { CROWD_LEVELS, crowdView, forecast, quietestHour } from '../lib/crowd';
 import { pressFeedback } from '../lib/feedback';
 import { walkMinutes } from '../lib/geo';
 import { DAYPART_LABEL, WEATHER_LABEL } from '../lib/labels';
@@ -116,7 +116,7 @@ export default function Result() {
       </div>
       <div className="card">
         {recs.map(({ place: p, pct, walk, visited }, i) => {
-          const lv = CROWD_LEVELS[crowdLevel(p, nowHour, dayKey)];
+          const lv = crowdView(p, nowHour, dayKey);
           return (
             <div className="rec" key={p.id}>
               <div className="rank">{i + 1}</div>
@@ -127,7 +127,7 @@ export default function Result() {
                 </div>
                 <div className="tags">
                   <span className="pill" style={{ background: lv.color }}>
-                    지금 {lv.label}
+                    {lv.known ? `지금 ${lv.label}` : '혼잡도 정보 없음'}
                   </span>
                   {p.official && <span className="tag shu">공식 인장</span>}
                   {visited && <span className="tag">받은 곳</span>}
@@ -140,7 +140,7 @@ export default function Result() {
           비율은 운영팀 시드 데이터(대표 관광 동선)이고 혼잡도는 예시입니다. 실제 방문 순서가 쌓이면 실데이터로 바꿉니다(5명 미만 비공개).
         </div>
         <Link className="btn secondary" to="/now" style={{ marginTop: 12 }}>
-          지금 받을 수 있는 인장 · 덜 붐비는 루트
+          지금 받을 수 있는 인장 · 인장 투어 루트
         </Link>
       </div>
 
@@ -148,14 +148,15 @@ export default function Result() {
         {place.nameKo} 혼잡 예보 <small>{quiet != null ? `가장 한산한 때 ${quiet}시쯤` : ''}</small>
       </div>
       <div className="card">
-        <div className="bars">
+        {place.crowdData === false && <div className="muted" style={{ fontSize: 13.5 }}>이 장소는 혼잡도 데이터가 없어요(서울시 도시데이터 범위 밖).</div>}
+        {place.crowdData !== false && <div className="bars">
           {fc.map(({ hour, level }) => (
             <div className={`b ${hour === nowHour ? 'now' : ''}`} key={hour}>
               <i style={{ height: 12 + level * 14, background: CROWD_LEVELS[level].color }} />
               <span>{hour}</span>
             </div>
           ))}
-        </div>
+        </div>}
       </div>
 
       <div className="row" style={{ marginTop: 16 }}>
@@ -163,7 +164,7 @@ export default function Result() {
           수첩 보기
         </Link>
         <Link className="btn dark" to="/route">
-          오늘의 순례 루트
+          오늘의 발자취
         </Link>
       </div>
     </main>
