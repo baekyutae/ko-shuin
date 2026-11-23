@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Stamp } from '../components/Stamp';
 import { toast, useNow } from '../components/ui';
-import { getPlace, region } from '../regions';
+import { baseStampOf, getPlace, region } from '../regions';
 import type { StampDef } from '../regions/types';
 import { stampUrl } from '../lib/qr';
 import { describeCondition } from '../lib/rules';
@@ -237,7 +237,25 @@ export default function Admin() {
             </p>
           </div>
         </section>
-      </div>
+            </div>
+
+      <section className="card" style={{ marginTop: 16 }}>
+        <h3 style={{ margin: '0 0 4px' }}>장소별 인장 미리보기</h3>
+        <p className="muted" style={{ fontSize: 13, margin: '0 0 14px' }}>
+          명소 픽토그램이 있는 장소는 가운데에 그림이 들어가요(風景印 참고). 테두리는 테마별로 원(궁궐·문화)·팔각(시장·거리)·육각(전망·한강·공원).
+          실서비스에서는 AI 픽토그램 초안을 사람이 검수해 등록합니다.
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 10 }}>
+          {region.places.map((p) => (
+            <div key={p.id} className="preview-pane" style={{ flexDirection: 'column', alignItems: 'center', padding: 10 }}>
+              <Stamp def={baseStampOf(p)} place={p} date={current} serial={p.baseVisitors} size={130} rotate={0} />
+              <small className="muted" style={{ marginTop: 4 }}>
+                {p.nameKo} · {region.pictograms[p.id] ? '픽토그램' : '글자형'}
+              </small>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

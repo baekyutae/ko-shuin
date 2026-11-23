@@ -1,5 +1,6 @@
-import { useId } from 'react';
-import type { Daypart, Place, StampDef, Weather } from '../regions/types';
+import { useId, type ReactNode, type SVGProps } from 'react';
+import { region } from '../regions';
+import type { Daypart, Place, StampDef, Theme, Weather } from '../regions/types';
 import { dotDate, reiwaDate } from '../lib/time';
 
 interface Props {
@@ -17,7 +18,47 @@ interface Props {
   className?: string;
 }
 
+type Frame = 'circle' | 'octagon' | 'hexagon';
+
 const NIGHT_INK = '#2f4b7c';
+const C = 85;
+
+/** 테마별 테두리 모양 (JR 東日本 역 스탬프의 원·팔각·육각 테두리 참고) */
+const FRAME_BY_THEME: Record<Theme, Frame> = {
+  궁궐: 'circle',
+  문화: 'circle',
+  시장: 'octagon',
+  거리: 'octagon',
+  전망: 'hexagon',
+  한강: 'hexagon',
+  공원: 'hexagon',
+};
+
+/** 정다각형 테두리. inr = 중심에서 변까지 거리 */
+function polygon(n: number, inr: number, startDeg: number) {
+  const R = inr / Math.cos(Math.PI / n);
+  const pts = Array.from({ length: n }, (_, i) => {
+    const a = ((startDeg + (360 / n) * i) * Math.PI) / 180;
+    return `${(C + R * Math.cos(a)).toFixed(2)},${(C + R * Math.sin(a)).toFixed(2)}`;
+  });
+  return `M${pts.join('L')}Z`;
+}
+
+function FrameShape({ frame, inr, ...rest }: { frame: Frame; inr: number } & SVGProps<SVGPathElement>) {
+  if (frame === 'circle') {
+    const { fill, stroke, strokeWidth, strokeDasharray } = rest;
+    return <circle cx={C} cy={C} r={inr} fill={fill} stroke={stroke} strokeWidth={strokeWidth} strokeDasharray={strokeDasharray} />;
+  }
+  const d = frame === 'octagon' ? polygon(8, inr, 22.5) : polygon(6, inr, 0);
+  return <path d={d} strokeLinejoin="round" {...rest} />;
+}
+
+// 테두리별 바깥·안쪽 선 위치(육각은 상자 안에 들어가도록 더 작게)
+const FRAME_INR: Record<Frame, [number, number]> = {
+  circle: [81, 74.5],
+  octagon: [80, 73.5],
+  hexagon: [73.5, 67.5],
+};
 
 function nameSize(text: string, max: number, width: number) {
   return Math.min(max, width / Math.max(1, text.length));
@@ -34,7 +75,7 @@ function scatter(seed: number, n: number): [number, number][] {
   while (pts.length < n) {
     const x = 14 + rnd() * 142;
     const y = 14 + rnd() * 142;
-    if ((x - 85) ** 2 + (y - 85) ** 2 < 70 ** 2) pts.push([x, y]);
+    if ((x - C) ** 2 + (y - C) ** 2 < 64 ** 2) pts.push([x, y]);
   }
   return pts;
 }
@@ -56,9 +97,9 @@ function WeatherLayer({ weather, daypart, color, seed }: { weather: Weather; day
         ))}
       {daypart === 'night' && (
         <>
-          <path d="M120 30 a11 11 0 1 0 9 17 a8.5 8.5 0 1 1 -9 -17z" fill={color} opacity="0.8" />
+          <path d="M114 25 a10 10 0 1 0 8 15.5 a7.8 7.8 0 1 1 -8 -15.5z" fill={color} opacity="0.8" />
           {scatter(seed + 3, 9).map(([x, y], i) =>
-            y < 70 && Math.abs(x - 85) > 26 ? <circle key={i} cx={x} cy={y} r={1.1} fill={color} opacity="0.6" /> : null,
+            y < 62 && Math.abs(x - C) > 26 ? <circle key={i} cx={x} cy={y} r={1.1} fill={color} opacity="0.6" /> : null,
           )}
         </>
       )}
@@ -68,18 +109,56 @@ function WeatherLayer({ weather, daypart, color, seed }: { weather: Weather; day
 
 /**
  * 인장 SVG. 장소·문구·연호 날짜·발급 번호를 템플릿에 넣어 만든다.
- * 같은 장소라도 그날 날씨(맑음·비·눈)와 낮/밤에 따라 무늬와 먹색이 달라진다.
+ * - 픽토그램이 있는 장소: 風景印처럼 가운데에 명소 그림을 넣는다.
+ * - 테두리 모양은 장소 테마(궁궐·시장·한강 등)에 따라 원·팔각·육각.
+ * - 그날 날씨(맑음·비·눈)와 낮/밤에 따라 무늬와 먹색이 달라진다.
  */
 export function Stamp({ def, place, date, serial, size = 170, rotate = -5, weather = 'sunny', daypart = 'day', ghost, className }: Props) {
   const fid = useId().replace(/:/g, '');
   // 기본 인장은 밤이면 남색 먹으로, 시즌·이벤트 인장은 고유 색을 유지한다.
   const ink = !def.limited && daypart === 'night' ? NIGHT_INK : def.color;
   const color = ghost ? '#a59a8a' : ink;
+  const frame = FRAME_BY_THEME[place.themes[0]] ?? 'circle';
+  const [outer, inner] = FRAME_INR[frame];
+  const picto: ReactNode | undefined = region.pictograms[place.id];
   const ko = place.nameKo;
   const ja = place.nameJa;
-  const koSize = nameSize(ko, 26, 118);
-  const jaSize = nameSize(ja, 12.5, 104);
   const seed = ko.length * 31 + ko.charCodeAt(0);
+
+  const label = (y: number, fs: number) => (
+    <text x={C} y={y} fontSize={fs} fill={color} letterSpacing="2" fontWeight="600">
+      {def.label}
+    </text>
+  );
+
+  const bottom = (dateY: number, noY: number, dateW: number) =>
+    ghost ? (
+      <text x={C} y={dateY + 2} fontSize="10.5" fill="#6f6658" fontFamily="Pretendard Variable, sans-serif" fontWeight="700">
+        {def.hint ?? '한정'}
+      </text>
+    ) : (
+      <>
+        {date && (
+          <text
+            x={C}
+            y={dateY}
+            fontSize="8.8"
+            fill={color}
+            fontWeight="600"
+            fontFamily="'Noto Serif JP',serif"
+            textLength={dateW}
+            lengthAdjust="spacingAndGlyphs"
+          >
+            {reiwaDate(date)}
+          </text>
+        )}
+        {serial != null && (
+          <text x={C} y={noY} fontSize="8.8" fill={color}>
+            No.{serial.toLocaleString('en-US')}
+          </text>
+        )}
+      </>
+    );
 
   return (
     <svg
@@ -103,36 +182,45 @@ export function Stamp({ def, place, date, serial, size = 170, rotate = -5, weath
         fontFamily="'Noto Serif KR','Noto Serif JP',serif"
         textAnchor="middle"
       >
-        {ghost && <circle cx="85" cy="85" r="81" fill="#efe9de" />}
+        {ghost && <FrameShape frame={frame} inr={outer} fill="#efe9de" />}
         {!ghost && <WeatherLayer weather={weather} daypart={daypart} color={color} seed={seed} />}
-        <circle cx="85" cy="85" r="81" fill="none" stroke={color} strokeWidth="3.4" strokeDasharray={ghost ? '6 5' : undefined} />
-        <circle cx="85" cy="85" r="74.5" fill="none" stroke={color} strokeWidth="1" />
-        <text x="85" y="50" fontSize="12" fill={color} letterSpacing="2" fontWeight="600">
-          {def.label}
-        </text>
-        <line x1="52" y1="58" x2="118" y2="58" stroke={color} strokeWidth="0.8" />
-        <text x="85" y={88 + koSize * 0.1} fontSize={koSize} fill={color} fontWeight="700">
-          {ko}
-        </text>
-        <text x="85" y="109" fontSize={jaSize} fill={color} fontWeight="600" fontFamily="'Noto Serif JP',serif">
-          {ja}
-        </text>
-        {ghost ? (
-          <text x="85" y="134" fontSize="11" fill="#6f6658" fontFamily="Pretendard Variable, sans-serif" fontWeight="700">
-            {def.hint ?? '한정'}
-          </text>
+        <FrameShape frame={frame} inr={outer} fill="none" stroke={color} strokeWidth="3.4" strokeDasharray={ghost ? '6 5' : undefined} />
+        <FrameShape frame={frame} inr={inner} fill="none" stroke={color} strokeWidth="1" />
+
+        {picto ? (
+          <>
+            {label(34.5, 10.5)}
+            <g
+              transform="translate(44.7 38.6) scale(1.06)"
+              style={{ color }}
+              stroke="currentColor"
+              fill="none"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              opacity={ghost ? 0.7 : 1}
+            >
+              {picto}
+            </g>
+            <text x={C} y="105.5" fontSize={nameSize(ko, 17, 100)} fill={color} fontWeight="700">
+              {ko}
+            </text>
+            <text x={C} y="118.5" fontSize={nameSize(ja, 10, 90)} fill={color} fontWeight="600" fontFamily="'Noto Serif JP',serif">
+              {ja}
+            </text>
+            {bottom(132, 145.5, 84)}
+          </>
         ) : (
           <>
-            {date && (
-              <text x="85" y="130" fontSize="9.2" fill={color} fontWeight="600" fontFamily="'Noto Serif JP',serif" textLength="92" lengthAdjust="spacingAndGlyphs">
-                {reiwaDate(date)}
-              </text>
-            )}
-            {serial != null && (
-              <text x="85" y="147" fontSize="9.5" fill={color}>
-                No.{serial.toLocaleString('en-US')}
-              </text>
-            )}
+            {label(50, 12)}
+            <line x1="52" y1="58" x2="118" y2="58" stroke={color} strokeWidth="0.8" />
+            <text x={C} y={88 + nameSize(ko, 26, 118) * 0.1} fontSize={nameSize(ko, 26, 118)} fill={color} fontWeight="700">
+              {ko}
+            </text>
+            <text x={C} y="109" fontSize={nameSize(ja, 12.5, 104)} fill={color} fontWeight="600" fontFamily="'Noto Serif JP',serif">
+              {ja}
+            </text>
+            {bottom(130, 147, 90)}
           </>
         )}
       </g>

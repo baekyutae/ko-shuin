@@ -1,4 +1,5 @@
 import type { FeatureCollection, MultiPolygon, Polygon } from 'geojson';
+import type { ReactNode } from 'react';
 
 export type Theme = '궁궐' | '시장' | '한강' | '거리' | '전망' | '문화' | '공원';
 
@@ -82,6 +83,8 @@ export interface RegionPack {
   /** 예시 하루 (순례 재생용) */
   demoDay: { date: string; stops: DemoStop[] };
   demoRoutes: RouteLeg[];
+  /** 장소 픽토그램(76×44 선화). 없는 장소는 글자 중심 인장으로 만든다 */
+  pictograms: Record<string, ReactNode>;
   /** 데모용: 이 장소 다음에 들른 장소 비율(%) */
   transitions: Record<string, [string, number][]>;
 }

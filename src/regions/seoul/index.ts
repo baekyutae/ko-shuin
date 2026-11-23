@@ -1,6 +1,7 @@
 import type { DistrictCollection, Place, RegionPack, RouteLeg, StampDef } from '../types';
 import districts from './districts.geo.json';
 import demoRoutes from './demoRoutes.json';
+import { seoulPictograms } from './pictograms';
 
 const p = (
   id: string,
@@ -150,4 +151,5 @@ export const seoul: RegionPack = {
   },
   demoRoutes: demoRoutes as RouteLeg[],
   transitions,
+  pictograms: seoulPictograms,
 };
