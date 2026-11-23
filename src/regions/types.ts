@@ -48,7 +48,7 @@ export type Daypart = 'day' | 'night';
 export interface StampDef {
   id: string;
   placeId: string;
-  /** 인장 상단 문구 (예: 참배, 야경) */
+  /** 인장 상단 문구 (예: 방문, 본선 기념, 벚꽃) */
   label: string;
   color: string;
   official: boolean;

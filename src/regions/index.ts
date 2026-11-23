@@ -12,12 +12,12 @@ export function getPlace(id: string): Place {
   return pl;
 }
 
-/** 장소마다 하나씩 있는 기본(참배) 인장 */
+/** 장소마다 하나씩 있는 기본(방문) 인장 */
 export function baseStampOf(place: Place): StampDef {
   return {
     id: place.id,
     placeId: place.id,
-    label: '참 배',
+    label: '방 문',
     color: '#c8372d',
     official: !!place.official,
     limited: false,
