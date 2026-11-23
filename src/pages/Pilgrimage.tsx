@@ -143,8 +143,17 @@ export default function Pilgrimage() {
   const [shot, setShot] = useState<string | null>(null);
   const [cardOpen, setCardOpen] = useState(false);
 
+  // GPS 타임라인이 켜져 있으면 위치 기록이 계속 늘어난다. 재생 중·재생 후에 경로가 다시
+  // 계산되면 재생이 초기화되므로, 재생 전(idle)일 때만 최신 기록을 경로에 반영한다.
   const track = useStore((s) => s.timeline.points);
-  const path = useMemo(() => (playable ? buildPath(stops, mode === 'today' ? track : []) : null), [stops, playable, mode, track]);
+  const [trackSnap, setTrackSnap] = useState(track);
+  useEffect(() => {
+    if (phase === 'idle') setTrackSnap(track);
+  }, [track, phase]);
+  const path = useMemo(
+    () => (playable ? buildPath(stops, mode === 'today' ? trackSnap : []) : null),
+    [stops, playable, mode, trackSnap],
+  );
 
   // 지도 생성
   useEffect(() => {
