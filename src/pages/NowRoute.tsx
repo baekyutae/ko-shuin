@@ -60,6 +60,15 @@ export default function NowRoute() {
         {meta.desc} <span style={{ color: 'var(--faint)' }}>({meta.ja})</span>
       </p>
 
+      <Link to="/planner" className="card" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none', marginBottom: 12, padding: 14 }}>
+        <span style={{ fontSize: 22 }}>💬</span>
+        <span style={{ flex: 1 }}>
+          <b style={{ display: 'block', fontSize: 14.5 }}>대화로 루트 짜기 · 인장 투어 플래너</b>
+          <span className="muted" style={{ fontSize: 12.5 }}>"오후 3시간, 성수 근처, 카페도" 처럼 말하면 루트를 짜고, 비가 오면 먼저 다시 제안해요</span>
+        </span>
+        <span className="tag">고도화 데모</span>
+      </Link>
+
       <div className="chips" style={{ marginBottom: 12 }}>
         <span className="tag">{hm(current)}</span>
         <span className="tag">

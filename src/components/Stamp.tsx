@@ -1,5 +1,6 @@
 import { useId, type ReactNode, type SVGProps } from 'react';
 import { region } from '../regions';
+import { MOTIF_BY_ID } from '../regions/motifs';
 import type { Daypart, Place, StampDef, Theme, Weather } from '../regions/types';
 import { dotDate, reiwaDate } from '../lib/time';
 
@@ -118,9 +119,24 @@ export function Stamp({ def, place, date, serial, size = 170, rotate = -5, weath
   // 기본 인장은 밤이면 남색 먹으로, 시즌·이벤트 인장은 고유 색을 유지한다.
   const ink = !def.limited && daypart === 'night' ? NIGHT_INK : def.color;
   const color = ghost ? '#a59a8a' : ink;
-  const frame = FRAME_BY_THEME[place.themes[0]] ?? 'circle';
+  const frame = def.frame ?? FRAME_BY_THEME[place.themes[0]] ?? 'circle';
   const [outer, inner] = FRAME_INR[frame];
-  const picto: ReactNode | undefined = region.pictograms[place.id];
+  // 그림 우선순위: 디자이너 업로드 이미지 > 에이전트가 고른 모티프 > 장소 픽토그램
+  const picto: ReactNode | undefined = def.image ? (
+    <image
+      href={def.image}
+      x="0"
+      y="2"
+      width="76"
+      height="42"
+      preserveAspectRatio="xMidYMid meet"
+      filter={daypart === 'night' && !ghost ? `url(#night-${fid})` : undefined}
+    />
+  ) : def.motif ? (
+    MOTIF_BY_ID.get(def.motif)?.art
+  ) : (
+    region.pictograms[place.id]
+  );
   const ko = place.nameKo;
   const ja = place.nameJa;
   const seed = ko.length * 31 + ko.charCodeAt(0);
@@ -174,6 +190,10 @@ export function Stamp({ def, place, date, serial, size = 170, rotate = -5, weath
         <filter id={`ink-${fid}`}>
           <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed={(ko.length * 7) % 13} />
           <feDisplacementMap in="SourceGraphic" scale="1.8" />
+        </filter>
+        {/* 업로드 이미지의 밤 버전: 색 변환 규칙(남색 톤) */}
+        <filter id={`night-${fid}`}>
+          <feColorMatrix type="matrix" values="0.2 0.2 0.2 0 0  0.25 0.25 0.25 0 0.05  0.35 0.35 0.35 0 0.2  0 0 0 1 0" />
         </filter>
       </defs>
       <g

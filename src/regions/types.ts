@@ -24,6 +24,8 @@ export interface Place {
   crowdData?: boolean;
   /** 데모용 혼잡도 보정값(예시 데이터의 장소별 성격) */
   crowdBias?: number;
+  /** 실내 장소(비 오는 날 플래너가 우선) */
+  indoor?: boolean;
   note?: string;
 }
 
@@ -59,6 +61,16 @@ export interface StampDef {
   hint?: string;
   /** 데모용 기존 발급 수 */
   baseIssued?: number;
+  /** ⑨ 에이전트가 고른 모티프 아이콘 id (없으면 장소 픽토그램) */
+  motif?: string;
+  /** 테두리 모양 (없으면 장소 테마로 결정) */
+  frame?: 'circle' | 'octagon' | 'hexagon';
+  /** ⑨ 디자이너 업로드 이미지(data URL). 날짜·번호는 시스템이 지정 영역에 넣는다 */
+  image?: string;
+  /** 한 줄 소개 */
+  intro?: string;
+  /** 등록 경로 */
+  source?: 'agent' | 'upload' | 'manual';
 }
 
 export interface DemoStop {

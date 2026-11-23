@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 168 104">
+  <!-- 디자이너 업로드 예시: DigiMan 해커톤 본선 기념 엠블럼 (데모용 샘플) -->
+  <g fill="none" stroke="#c8372d" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M44 92 C22 82 14 58 22 36" />
+    <path d="M124 92 C146 82 154 58 146 36" />
+    <g fill="#c8372d" stroke="none">
+      <ellipse cx="22" cy="44" rx="4" ry="8" transform="rotate(-20 22 44)" />
+      <ellipse cx="20" cy="60" rx="4" ry="8" transform="rotate(-40 20 60)" />
+      <ellipse cx="26" cy="75" rx="4" ry="8" transform="rotate(-60 26 75)" />
+      <ellipse cx="36" cy="86" rx="4" ry="8" transform="rotate(-75 36 86)" />
+      <ellipse cx="146" cy="44" rx="4" ry="8" transform="rotate(20 146 44)" />
+      <ellipse cx="148" cy="60" rx="4" ry="8" transform="rotate(40 148 60)" />
+      <ellipse cx="142" cy="75" rx="4" ry="8" transform="rotate(60 142 75)" />
+      <ellipse cx="132" cy="86" rx="4" ry="8" transform="rotate(75 132 86)" />
+    </g>
+    <rect x="44" y="18" width="80" height="62" rx="8" />
+    <path d="M58 32 h18 M58 42 h30 M58 52 h24 M58 62 h34" stroke-width="2.6" />
+    <path d="M104 30 l6 6 l-6 6 M98 52 l-6 6 l6 6" stroke-width="2.6" />
+  </g>
+  <text x="84" y="14" text-anchor="middle" font-family="serif" font-weight="700" font-size="13" fill="#c8372d" letter-spacing="2">本選記念</text>
+  <text x="84" y="99" text-anchor="middle" font-family="sans-serif" font-weight="700" font-size="10" fill="#c8372d" letter-spacing="1.5">DIGIMAN × KOREC</text>
+</svg>

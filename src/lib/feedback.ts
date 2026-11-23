@@ -3,7 +3,8 @@ let ctx: AudioContext | null = null;
 /** 인장이 찍힐 때 '쿵' 하는 짧은 소리와 진동 */
 export function pressFeedback() {
   try {
-    navigator.vibrate?.([18, 40, 28]);
+    // 사용자가 화면을 한 번도 누르지 않았으면(예: QR 링크로 바로 열림) 브라우저가 진동을 막는다.
+    if (navigator.userActivation?.hasBeenActive ?? true) navigator.vibrate?.([18, 40, 28]);
   } catch {
     /* 진동 미지원 */
   }

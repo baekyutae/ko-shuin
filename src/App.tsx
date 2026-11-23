@@ -14,6 +14,7 @@ import { useTimelineRecorder } from './hooks/useTimelineRecorder';
 // 지도 라이브러리가 큰 화면은 필요할 때만 불러온다.
 const Pilgrimage = lazy(() => import('./pages/Pilgrimage'));
 const Admin = lazy(() => import('./pages/Admin'));
+const Planner = lazy(() => import('./pages/Planner'));
 
 const TABS = [
   { to: '/', icon: '訪', label: '방문' },
@@ -53,6 +54,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Visit />} />
           <Route path="/now" element={<NowRoute />} />
+          <Route path="/planner" element={<Planner />} />
           <Route path="/result" element={<Result />} />
           <Route path="/s/:placeId" element={<QrEntry />} />
           <Route path="/book" element={<Book />} />
